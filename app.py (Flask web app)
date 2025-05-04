@@ -1,0 +1,30 @@
+from flask import Flask, render_template, request
+import numpy as np
+import cv2
+import tensorflow as tf
+from tensorflow.keras.models import load_model
+import os
+
+app = Flask(__name__)
+model = load_model('digit_model.h5')
+
+@app.route('/')
+def index():
+    return '''
+    <form method="POST" action="/predict" enctype="multipart/form-data">
+      <input type="file" name="file">
+      <input type="submit">
+    </form>
+    '''
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    file = request.files['file']
+    image = cv2.imdecode(np.frombuffer(file.read(), np.uint8), cv2.IMREAD_GRAYSCALE)
+    image = cv2.resize(image, (28, 28))
+    image = image.reshape(1, 28, 28, 1) / 255.0
+    prediction = model.predict(image)
+    return f"Predicted Digit: {np.argmax(prediction)}"
+
+if __name__ == '__main__':
+    app.run(debug=True)
